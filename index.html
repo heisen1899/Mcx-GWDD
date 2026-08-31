@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1020" />
+  <title>MCX NG — GFS GWDD</title>
+  <style>
+    :root{--bg:#080b14;--panel:#101625;--panel2:#0d1320;--text:#f4f6fb;--muted:#9aa4b2;--line:#222b3b;--good:#35d07f;--bad:#ff6574;--accent:#6ea8fe}
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#070a12 0%,#0b1020 100%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,Arial,sans-serif;min-height:100vh}
+    main{max-width:820px;margin:0 auto;padding:18px 14px 34px}
+    header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+    .title{font-size:23px;font-weight:800;letter-spacing:-.03em}.sub{font-size:12px;color:var(--muted);margin-top:4px}
+    button{border:0;background:var(--text);color:#09101c;font-weight:800;border-radius:14px;padding:12px 16px;font-size:14px;min-width:96px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+    button:disabled{opacity:.55}
+    .status{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin:10px 1px 14px}
+    .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--good);margin-right:6px}.dot.off{background:var(--bad)}
+    .hero{background:linear-gradient(180deg,#141b2d,#101625);border:1px solid var(--line);border-radius:22px;padding:18px;margin-bottom:12px}
+    .heroTop{display:flex;justify-content:space-between;align-items:center;gap:12px}.label{font-size:12px;text-transform:uppercase;letter-spacing:.11em;color:var(--muted);font-weight:700}
+    .cycle{font-size:13px;font-weight:800;padding:7px 9px;border:1px solid var(--line);border-radius:999px;background:#0b111d}
+    .value{font-size:62px;line-height:1;font-weight:900;letter-spacing:-.05em;margin:13px 0 6px}.unit{font-size:15px;color:var(--muted);font-weight:700;vertical-align:middle;margin-left:5px}
+    .delta{font-size:20px;font-weight:900}.delta.up{color:var(--good)}.delta.down{color:var(--bad)}.delta.flat{color:var(--muted)}
+    .meta{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .card{background:var(--panel2);border:1px solid var(--line);border-radius:18px;padding:14px}.card h3{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0 0 10px}.big{font-size:22px;font-weight:850}.small{font-size:12px;color:var(--muted);margin-top:5px}
+    table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}.history{margin-top:12px}.history td,.history th{padding:10px 4px;border-bottom:1px solid var(--line);font-size:12px}.history th{color:var(--muted);font-weight:700;text-align:left}.right{text-align:right}.up{color:var(--good);font-weight:800}.down{color:var(--bad);font-weight:800}.flat{color:var(--muted);font-weight:800}
+    .rev{color:var(--accent);font-weight:700}
+    .footer{margin-top:14px;padding:12px 2px;font-size:11px;color:var(--muted);line-height:1.55}.footer a{color:var(--accent);text-decoration:none}
+    .error{display:none;background:#2a1216;border:1px solid #5e2630;color:#ffb0b8;border-radius:14px;padding:12px;font-size:12px;line-height:1.45;margin-bottom:12px}
+    @media(max-width:520px){main{padding:14px 11px 28px}.value{font-size:54px}.grid{grid-template-columns:1fr}.hero{border-radius:20px}.title{font-size:20px}}
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <div class="title">MCX NG · GFS GWDD</div>
+      <div class="sub">Free run tracker · India IST · manual update</div>
+    </div>
+    <button id="refresh">UPDATE</button>
+  </header>
+
+  <div class="status"><span><span id="dot" class="dot off"></span><span id="statusText">Not loaded</span></span><span id="clock"></span></div>
+  <div id="error" class="error"></div>
+
+  <section class="hero">
+    <div class="heroTop"><div class="label">Latest published GWDD</div><div id="cycle" class="cycle">—</div></div>
+    <div><span id="gwdd" class="value">—</span><span class="unit">GWDD</span></div>
+    <div id="delta" class="delta flat">—</div>
+    <div id="window" class="meta">Window: —</div>
+    <div id="sourceTime" class="meta">Source update: —</div>
+  </section>
+
+  <div class="grid">
+    <div class="card"><h3>Run</h3><div id="runUtc" class="big">—</div><div id="runIst" class="small">—</div></div>
+    <div class="card"><h3>Source</h3><div class="big">Celsius Energy</div><div class="small">GFS ENS / GEFS based</div></div>
+  </div>
+
+  <section class="card history">
+    <h3>My saved run history</h3>
+    <table><thead><tr><th>Run</th><th class="right">GWDD</th><th class="right">Δ</th><th class="right">Fetched</th></tr></thead><tbody id="historyBody"><tr><td colspan="4" class="small">Press UPDATE to start the local history.</td></tr></tbody></table>
+  </section>
+
+  <div class="footer">
+    The page stores your run history only in this iPhone/browser via localStorage. The source page states that its numerical GWDD data is based on GFS ENS and updates four times per day on 00Z, 06Z, 12Z and 18Z cycles. This dashboard reads the public Celsius Energy numerical feed through the included Netlify function. GWDD methodology is source-specific. Rows marked <span class="rev">rev</span> are a later re-read of the same nominal cycle whose published number changed (source revision), not a new model run.
+    <br><br><a href="https://www.celsiusenergy.net/p/weather-data.html" target="_blank" rel="noopener">Open source page</a> · <a href="https://www.ncei.noaa.gov/products/weather-climate-models/global-forecast" target="_blank" rel="noopener">NOAA GFS</a>
+  </div>
+</main>
+<script>
+const KEY='mcx-ng-gwdd-history-v2'; // bumped: v1 rows used the old (broken) schema
+const $=id=>document.getElementById(id);
+function fmtIst(iso){try{return new Intl.DateTimeFormat('en-IN',{dateStyle:'medium',timeStyle:'short',hour12:false,timeZone:'Asia/Kolkata'}).format(new Date(iso));}catch{return iso}}
+function fmtShort(iso){try{return new Intl.DateTimeFormat('en-IN',{month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Kolkata'}).format(new Date(iso));}catch{return iso}}
+
+function history(){return JSON.parse(localStorage.getItem(KEY)||'[]')}
+
+// ROOT-CAUSE FIX: the old code used `runUtc` (which the backend only ever set to
+// the bare cycle label, e.g. "06Z") as if it were a unique, chronological run
+// identifier — for display (fmtShort), for dedup, and for "previous run" lookup.
+// A cycle label repeats every day and can't distinguish two different pulls of
+// the same nominal cycle. That's why two 06Z fetches with different GWDD values
+// both rendered as "06Z · 06Z", and why deltas could reference a stale row.
+//
+// Fix: every saved row now carries
+//   - runId       : backend's date+cycle identifier (e.g. "2026-08-31_06Z") — the
+//                    real identity of the model run, used for "is this the same
+//                    run as before" checks
+//   - fetchedAt   : a genuine ISO timestamp of when THIS pull happened — used for
+//                    display and chronological ordering (never reused)
+// The previous "row" for delta purposes is simply history()[0] (most recently
+// SAVED row, by fetchedAt) — that is what "vs your previously saved run" means —
+// but we now also detect same-runId revisions and label them instead of letting
+// them masquerade as a new run.
+function saveHistory(row){
+  const old = history();
+  const top = old[0];
+  // True no-op duplicate: identical run, identical number, fetched again (e.g. a
+  // double tap). Skip saving a redundant row.
+  if (top && top.runId === row.runId && Number(top.gwdd) === Number(row.gwdd)) {
+    return;
+  }
+  const isRevision = !!(top && top.runId === row.runId && Number(top.gwdd) !== Number(row.gwdd));
+  const newRow = { ...row, isRevision };
+  const next = [newRow, ...old].slice(0, 30);
+  localStorage.setItem(KEY, JSON.stringify(next));
+  renderHistory();
+}
+
+function renderHistory(){
+  const h=history(); const body=$('historyBody');
+  if(!h.length){body.innerHTML='<tr><td colspan="4" class="small">Press UPDATE to start the local history.</td></tr>';return}
+  body.innerHTML=h.map(x=>{
+    const cls=x.delta>0?'up':x.delta<0?'down':'flat';
+    const d=x.delta==null?'—':(x.delta>0?'+':'')+Number(x.delta).toFixed(1);
+    const label = (x.cycle||'—') + (x.cycleDateUtc?(' · '+x.cycleDateUtc):'') + (x.isRevision?' <span class="rev">rev</span>':'');
+    return `<tr><td>${label}</td><td class="right">${Number(x.gwdd).toFixed(1)}</td><td class="right ${cls}">${d}</td><td class="right">${fmtShort(x.fetchedAt)}</td></tr>`;
+  }).join('');
+}
+
+async function update(){
+  $('refresh').disabled=true; $('statusText').textContent='Updating…'; $('dot').className='dot'; $('error').style.display='none';
+  try{
+    const r=await fetch('/.netlify/functions/gwdd?ts='+Date.now(),{cache:'no-store'});
+    if(!r.ok) throw new Error('Backend returned '+r.status);
+    const d=await r.json(); if(!d.gwdd) throw new Error(d.error||'No GWDD number found');
+
+    $('gwdd').textContent=Number(d.gwdd).toFixed(1);
+    $('cycle').textContent=d.cycle||'—';
+    $('window').textContent='Window: '+(d.window||'published source window');
+    $('sourceTime').textContent='Source update: '+(d.sourceUpdated||'—');
+    $('runUtc').textContent=(d.cycle||'—')+(d.cycleDateUtc?(' · '+d.cycleDateUtc):'');
+    $('runIst').textContent=d.runIst?('IST · '+d.runIst):'';
+
+    const fetchedAt = new Date().toISOString();
+    const runId = d.runId || d.cycle || fetchedAt; // fallback keeps things working even if backend is older
+
+    const prev = history()[0];
+    let delta = null;
+    if (prev && Number.isFinite(Number(prev.gwdd))) delta = Number(d.gwdd) - Number(prev.gwdd);
+
+    const el=$('delta');
+    el.className='delta '+(delta>0?'up':delta<0?'down':'flat');
+    el.textContent = delta==null ? 'Δ — (first saved run)' : `${delta>=0?'+':''}${delta.toFixed(1)} vs last saved run`;
+
+    saveHistory({
+      runId,
+      cycle: d.cycle || 'GFS',
+      cycleDateUtc: d.cycleDateUtc || null,
+      gwdd: Number(d.gwdd),
+      delta,
+      fetchedAt
+    });
+
+    $('statusText').textContent='Updated'; $('dot').className='dot';
+  }catch(e){$('statusText').textContent='Update failed';$('dot').className='dot off';$('error').textContent=e.message+' — the source may not have published a fresh value yet.';$('error').style.display='block'}
+  finally{$('refresh').disabled=false}
+}
+function clock(){ $('clock').textContent=new Intl.DateTimeFormat('en-IN',{dateStyle:'medium',timeStyle:'short',hour12:false,timeZone:'Asia/Kolkata'}).format(new Date())+' IST'; }
+$('refresh').addEventListener('click',update); renderHistory(); clock(); setInterval(clock,1000);
+</script>
+</body>
+</html>
